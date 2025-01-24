@@ -2,14 +2,17 @@
 "use client";
 
 import * as React from "react";
-import { Box, Typography, Stack, Collapse, Divider } from "@mui/material";
+import { Box, Typography, Stack, Collapse, Divider, IconButton } from "@mui/material";
 import type { CategoryItem } from "./types";
+// NEU: Pencil-Icon import
+import { NotePencil as NotePencilIcon } from "@phosphor-icons/react/dist/ssr/NotePencil";
+import Link from "next/link"; // um den IconButton als Link zu verwenden
 
 interface SidebarListProps {
   categories: CategoryItem[];
   selectedCatId: string | null;
   /**
-   * onSelectCategory: 
+   * onSelectCategory:
    *  - Wenn catId = null => Nichts ausgewählt (Collapse zu)
    *  - Wenn catId = "CAT-002", etc. => diese Category öffnen
    */
@@ -58,24 +61,44 @@ interface SidebarListItemProps {
 function SidebarListItem({ category, selected, onToggle }: SidebarListItemProps) {
   return (
     <Box sx={{ "&:hover": { backgroundColor: "transparent" } }}>
-      {/* Header-Bereich */}
+      {/* Header-Bereich, jetzt mit Edit-Icon ganz rechts */}
       <Box
         sx={{
           px: 2,
           py: 1,
           borderBottom: "1px solid var(--mui-palette-divider)",
+          // Wir machen ein flex-Layout, damit wir rechts das Icon platzieren
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           cursor: "pointer",
         }}
         onClick={onToggle}
       >
-        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-          {category.name}
-        </Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          {category.lastUsedAt
-            ? `Last used: ${category.lastUsedAt.toLocaleTimeString()}`
-            : "No usage"}
-        </Typography>
+        {/* Links: Category Name + Last Used */}
+        <Box>
+          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+            {category.name}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            {category.lastUsedAt
+              ? `Last used: ${category.lastUsedAt.toLocaleTimeString()}`
+              : "No usage"}
+          </Typography>
+        </Box>
+
+        {/* Rechts: Edit-Icon. 
+            Link zu /dashboard/categories/edit/[category.id].
+            ACHTUNG: stopPropagation => Wir verhindern, dass onClick={onToggle} auslöst, wenn man 
+            aufs Icon klickt (sonst klappen wir Collapse auf/zu).
+        */}
+        <IconButton
+          component={Link}
+          href={`/dashboard/categories/edit/${category.id}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <NotePencilIcon />
+        </IconButton>
       </Box>
 
       {/* Detail/Collapse */}

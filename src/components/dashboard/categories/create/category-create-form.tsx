@@ -13,13 +13,20 @@ import { Check as CheckIcon } from "@phosphor-icons/react/dist/ssr/Check";
 
 import { CategoryTypeStep } from "./category-type-step";
 import { CategoryDetailsStep } from "./category-details-step";
-import { CategoryDescriptionStep } from "./category-description-step";
+// WICHTIG: CategoryDescriptionStep entfernen (Embed-Builder brauchst du aktuell nicht)
 import { CategoryPreview } from "./category-preview";
 
-/** Eigenes StepIcon (Kästchen mit Check) */
-function StepIcon({ active, completed, icon }: StepIconProps): React.JSX.Element {
-  const highlight = active || completed;
+/** Das Interface für alle Felder, die wir über die Steps sammeln */
+interface CategoryFormData {
+  categoryType: string;
+  name: string;
+  tags: string[];
+  isVisible: boolean;
+}
 
+/** Eigenes StepIcon (Kästchen mit Check) */
+function WizardStepIcon({ active, completed, icon }: StepIconProps): React.JSX.Element {
+  const highlight = active || completed;
   return (
     <Avatar
       sx={{
@@ -36,50 +43,79 @@ function StepIcon({ active, completed, icon }: StepIconProps): React.JSX.Element
 }
 
 /**
- * Wizard-Form, 3 Schritte + Preview-Screen.
+ * Wizard-Form, 2 Schritte + Preview-Screen.
  */
 export function CategoryCreateForm(): React.JSX.Element {
+  // Step-Index
   const [activeStep, setActiveStep] = React.useState<number>(0);
+
+  // Ob wir fertig sind => Preview
   const [isComplete, setIsComplete] = React.useState<boolean>(false);
 
-  // Schaltet weiter
+  // Gemeinsamer Form-State: Typ, Name, Tags, Sichtbarkeit
+  const [formData, setFormData] = React.useState<CategoryFormData>({
+    categoryType: "freelancers", // Startwert (z. B. Allianz Ebene)
+    name: "",
+    tags: [],
+    isVisible: true,
+  });
+
+  // Schritt vor
   const handleNext = React.useCallback(() => {
     setActiveStep((prev) => prev + 1);
   }, []);
 
-  // Geht zurück
+  // Schritt zurück
   const handleBack = React.useCallback(() => {
     setActiveStep((prev) => prev - 1);
   }, []);
 
-  // Letzter Schritt => fertig
+  // Letzter Schritt => fertig => zeige Preview
   const handleComplete = React.useCallback(() => {
     setIsComplete(true);
   }, []);
 
-  // Liste der Steps
+  // Liste der Steps (jetzt 2)
   const steps = React.useMemo(() => {
     return [
       {
-        label: "Category Type",
-        content: <CategoryTypeStep onBack={handleBack} onNext={handleNext} />,
+        label: "Kategorie Typ",
+        content: (
+          <CategoryTypeStep
+            value={formData.categoryType}
+            onChange={(newVal) => {
+              setFormData((prev) => ({ ...prev, categoryType: newVal }));
+            }}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        ),
       },
       {
         label: "Details",
-        content: <CategoryDetailsStep onBack={handleBack} onNext={handleNext} />,
-      },
-      {
-        label: "Description",
-        content: <CategoryDescriptionStep onBack={handleBack} onNext={handleComplete} />,
+        content: (
+          <CategoryDetailsStep
+            name={formData.name}
+            tags={formData.tags}
+            isVisible={formData.isVisible}
+            onChange={(partial) => {
+              // partial = { name?: string, tags?: string[], isVisible?: boolean }
+              setFormData((prev) => ({ ...prev, ...partial }));
+            }}
+            onNext={handleComplete}
+            onBack={handleBack}
+          />
+        ),
       },
     ];
-  }, [handleBack, handleNext, handleComplete]);
+  }, [formData, handleNext, handleBack, handleComplete]);
 
-  // Sobald "isComplete" => Preview
+  // Falls "isComplete" => Preview
   if (isComplete) {
-    return <CategoryPreview />;
+    return <CategoryPreview formData={formData} />;
   }
 
+  // Normalfall: Stepper UI
   return (
     <Stepper
       activeStep={activeStep}
@@ -101,7 +137,7 @@ export function CategoryCreateForm(): React.JSX.Element {
     >
       {steps.map((step) => (
         <Step key={step.label}>
-          <StepLabel StepIconComponent={StepIcon}>
+          <StepLabel StepIconComponent={WizardStepIcon}>
             <Typography variant="overline">{step.label}</Typography>
           </StepLabel>
           <StepContent>

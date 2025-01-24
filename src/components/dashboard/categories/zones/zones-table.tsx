@@ -12,6 +12,7 @@ import type { ColumnDef } from "@/components/core/data-table";
 
 import type { ZoneResult } from "./types";
 import { useZonesSelection } from "./zones-selection-context";
+import Link from "next/link";
 
 // OPTIONAL: Falls du Pfade hast
 import { paths } from "@/paths";
@@ -43,7 +44,7 @@ const columns: ColumnDef<ZoneResult>[] = [
   {
     formatter: (row) => row.categoryName ?? "-",
     name: "Kategorie",
-    width: "150px",
+    width: "250px",
   },
   {
     formatter: (row) => {
@@ -54,10 +55,11 @@ const columns: ColumnDef<ZoneResult>[] = [
     width: "180px",
   },
   {
-    // Example: Stift-Icon => Edit
-    // In echt: <IconButton component={Link} href={paths.dashboard.zones.details(row.id)} >
     formatter: (row) => (
-      <IconButton>
+      <IconButton
+        component={Link}
+        href={`/dashboard/categories/zones/edit/${row.id}`}
+      >
         <NotePencilIcon />
       </IconButton>
     ),

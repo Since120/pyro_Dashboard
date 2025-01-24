@@ -1,4 +1,3 @@
-// apps/dashboard/src/components/dashboard/categories/zones/zones-page-client.tsx
 "use client";
 
 import * as React from "react";
@@ -8,7 +7,7 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { ZonesSelectionProvider } from "./zones-selection-context";
@@ -17,66 +16,73 @@ import { ZonesPagination } from "./zones-pagination";
 import { ZonesTable } from "./zones-table";
 import type { ZoneResult } from "./types";
 
-// OPTIONAL: Falls du "paths" nutzen willst
-import { paths } from "@/paths"; 
-// Falls du kein "paths" hast, entweder weglassen oder Dummy:
-// export const paths = { dashboard: { zones: { create: "#", details: (id: string) => `#${id}` } } };
+// Falls du "paths" nutzt
+import { paths } from "@/paths";
 
+// 1) Wir entfernen Dummy-Zonen und machen realen fetch
 export function ZonesPageClient() {
-  // 1) Dummy-Daten:
-  const dummyZones: ZoneResult[] = React.useMemo(() => {
-    return [
-      {
-        id: "zone-aaa",
-        zoneKey: "Z-A01",
-        zoneName: "Test Zone A",
-        minutesRequired: 30,
-        pointsGranted: 100,
-        totalSecondsInZone: 3600 * 4, // 4 Stunden
-        categoryName: "MockCat",
-        lastUsage: new Date("2025-01-22T20:45:00"),
-      },
-      {
-        id: "zone-bbb",
-        zoneKey: "Z-B02",
-        zoneName: "Another Zone B",
-        minutesRequired: 45,
-        pointsGranted: 150,
-        totalSecondsInZone: 3600 * 2.5, // 2.5 Stunden
-        categoryName: null,
-        lastUsage: new Date("2025-01-20T15:30:00"),
-      },
-      {
-        id: "zone-ccc",
-        zoneKey: "Z-C03",
-        zoneName: "Sample Zone C",
-        minutesRequired: 60,
-        pointsGranted: 300,
-        totalSecondsInZone: 0,
-        categoryName: "OtherCat",
-        lastUsage: null,
-      },
-    ];
-  }, []);
+  const router = useRouter();
+  const [zones, setZones] = React.useState<ZoneResult[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  // 2) Optional: Filter-Parameter per Query
+  // Optional: Filter-Parameter per Query (SearchParams)
   const searchParams = useSearchParams();
-  const zoneKey = searchParams?.get("zoneKey") ?? "";
-  const name = searchParams?.get("name") ?? "";
+  const zoneKeyParam = searchParams?.get("zoneKey") ?? "";
+  const nameParam = searchParams?.get("name") ?? "";
   const sortDir = (searchParams?.get("sortDir") as "asc" | "desc") ?? "desc";
 
+  // 2) Beim Mount => Daten laden (alle Zonen)
+  React.useEffect(() => {
+    async function fetchZones() {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch("/api/zones");
+        if (!res.ok) {
+          throw new Error(`Error ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+
+        // data = Array of { id, zoneKey, zoneName, ... }
+        const mapped: ZoneResult[] = data.map((z: any) => ({
+          id: z.id,
+          zoneKey: z.zoneKey,
+          zoneName: z.zoneName,
+          minutesRequired: z.minutesRequired,
+          pointsGranted: z.pointsGranted,
+          totalSecondsInZone: z.totalSecondsInZone ?? 0,
+          lastUsage: z.lastUsage ? new Date(z.lastUsage) : null,
+  
+          // Neu: Falls category vorhanden => name
+          categoryName: z.category ? z.category.name : null,
+        }));
+  
+        setZones(mapped);
+      } catch (err: any) {
+        console.error("fetchZones error:", err);
+        setError(err.message ?? "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    }
+  
+    fetchZones();
+  }, []);
+
   // 3) Filtern + Sortieren (clientseitig)
+  // => Du kannst es wie in der alten Dummy-Logik belassen, falls gewünscht
   const filtered = React.useMemo(() => {
-    return dummyZones.filter((z) => {
-      if (zoneKey && !z.zoneKey.toLowerCase().includes(zoneKey.toLowerCase())) {
+    return zones.filter((z) => {
+      if (zoneKeyParam && !z.zoneKey.toLowerCase().includes(zoneKeyParam.toLowerCase())) {
         return false;
       }
-      if (name && !z.zoneName.toLowerCase().includes(name.toLowerCase())) {
+      if (nameParam && !z.zoneName.toLowerCase().includes(nameParam.toLowerCase())) {
         return false;
       }
       return true;
     });
-  }, [dummyZones, zoneKey, name]);
+  }, [zones, zoneKeyParam, nameParam]);
 
   const sorted = React.useMemo(() => {
     if (sortDir === "asc") {
@@ -85,15 +91,14 @@ export function ZonesPageClient() {
     return [...filtered].sort((a, b) => b.zoneName.localeCompare(a.zoneName));
   }, [filtered, sortDir]);
 
+  // 4) Neue Zone anlegen => ...
+  const handleCreateZone = React.useCallback(() => {
+    router.push("/dashboard/categories/zones/create");
+  }, [router]);
+
+  // 5) Render
   return (
-    <Box
-      sx={{
-        // Ein bisschen Abstand (optional)
-        maxWidth: "100%",
-        mx: "auto",
-        width: "100%",
-      }}
-    >
+    <Box sx={{ maxWidth: "100%", mx: "auto", width: "100%" }}>
       <Stack spacing={4}>
         {/* Überschrift + Button */}
         <Stack
@@ -102,24 +107,34 @@ export function ZonesPageClient() {
           sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
         >
           <Typography variant="h4">Zonen Übersicht</Typography>
-          <Button variant="contained" component={Link} href={paths.dashboard.zones.create}>
-            Neue Zone anlegen!
+          <Button variant="contained" component={Link} href="/dashboard/categories/zones/create">
+            Neue Zone anlegen
           </Button>
         </Stack>
 
-        {/* Die eigentliche Tabelle + Filter + Selektion */}
         <ZonesSelectionProvider zones={sorted}>
           <Card>
             {/* Filter-Bereich */}
             <ZonesFilters
-              filters={{ zoneKey, name }}
+              filters={{ zoneKey: zoneKeyParam, name: nameParam }}
               sortDir={sortDir}
             />
             <Divider />
-            {/* Tabelle */}
-            <ZonesTable rows={sorted} />
+
+            {/* Lade-/Fehler-Zustand */}
+            {loading && (
+              <Typography color="text.secondary" variant="body2" sx={{ p: 2 }}>
+                Loading...
+              </Typography>
+            )}
+            {error && (
+              <Typography color="error" variant="body2" sx={{ p: 2 }}>
+                {error}
+              </Typography>
+            )}
+            {!loading && !error && <ZonesTable rows={sorted} />}
+
             <Divider />
-            {/* Pagination (Dummy) */}
             <ZonesPagination count={sorted.length} page={0} />
           </Card>
         </ZonesSelectionProvider>

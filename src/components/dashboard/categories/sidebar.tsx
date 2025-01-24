@@ -15,6 +15,7 @@ import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import type { CategoryItem } from "./types";
 import { SidebarList } from "./sidebar-list";
+import Link from "next/link";
 
 interface SidebarProps {
   categories: CategoryItem[];
@@ -92,7 +93,7 @@ function SidebarContent({
             <XIcon />
           </IconButton>
         </Stack>
-        <Button variant="contained" startIcon={<PlusIcon />}>
+        <Button component={Link} href="/dashboard/categories/create" variant="contained" startIcon={<PlusIcon />}>
           Add Category
         </Button>
       </Stack>

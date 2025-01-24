@@ -1,3 +1,19 @@
+## Update Prisma
+
+1. **Git Submodul Update**
+    ´´´bash
+    git submodule update --remote --merge
+    npm run prisma:migrate  # (oder generate, je nach Bedarf)
+    npm run prisma:generate
+
+
+2.  **Update über pnpm**
+    ´´´bash
+    pnpm run submodule:update
+
+
+
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started

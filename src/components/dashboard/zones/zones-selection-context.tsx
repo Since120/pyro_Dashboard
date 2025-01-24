@@ -4,7 +4,7 @@ import * as React from "react";
 import { useSelection } from "@/hooks/use-selection"; 
 import type { Selection } from "@/hooks/use-selection";
 
-import type { ZoneResult } from "@/app/dashboard/zones/ZonesPageClient.types"; 
+import type { ZoneResult } from "app/dashboard/zones/ZonesPageClient.types"; 
 // ... oder direkt { id:string;...}
 
 function noop(): void {

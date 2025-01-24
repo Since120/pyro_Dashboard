@@ -33,29 +33,41 @@ const categoryOptions = [
 ] as const;
 
 export interface CategoryTypeStepProps {
+  /** Aktueller Wert, z. B. "freelancers" */
+  value: string;
+  /** Callback, wenn der User wechselt */
+  onChange: (newVal: string) => void;
+  /** Button-Klick => next */
   onNext?: () => void;
+  /** optional onBack? */
   onBack?: () => void;
 }
 
 /**
- * Schritt 1: Auswahl einer Kategorie-Art (Dummy)
+ * Schritt 1: Auswahl einer Kategorie-Art
  */
-export function CategoryTypeStep({ onNext }: CategoryTypeStepProps): React.JSX.Element {
-  const [category, setCategory] = React.useState<string>(categoryOptions[0].value);
-
-  const handleCategoryChange = React.useCallback((newVal: string) => {
-    setCategory(newVal);
-  }, []);
+export function CategoryTypeStep({
+  value,
+  onChange,
+  onNext,
+  onBack,
+}: CategoryTypeStepProps): React.JSX.Element {
+  // Wir leiten Änderungen an den Eltern-State weiter
+  const handleCategoryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(event.target.value);
+  };
 
   return (
     <Stack spacing={3}>
       <div>
-        <Typography variant="h6">Für welchen Type möchtest Du eine neue Kategorie eröffnen?</Typography>
+        <Typography variant="h6">
+          Für welchen Type möchtest Du eine neue Kategorie eröffnen?
+        </Typography>
       </div>
 
       <RadioGroup
-        onChange={(e) => handleCategoryChange(e.target.value)}
-        value={category}
+        onChange={handleCategoryChange}
+        value={value}
         sx={{
           "& .MuiFormControlLabel-root": {
             border: "1px solid var(--mui-palette-divider)",
@@ -112,7 +124,7 @@ export function CategoryTypeStep({ onNext }: CategoryTypeStepProps): React.JSX.E
               </div>
             }
             sx={{
-              ...(option.value === category && {
+              ...(option.value === value && {
                 "&::before": {
                   boxShadow: "0 0 0 2px var(--mui-palette-primary-main)",
                 },
@@ -122,8 +134,13 @@ export function CategoryTypeStep({ onNext }: CategoryTypeStepProps): React.JSX.E
         ))}
       </RadioGroup>
 
+      {/* Buttons: optional "Back"? */}
       <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-        <Button variant="contained" endIcon={<ArrowRightIcon />} onClick={onNext}>
+        <Button
+          variant="contained"
+          endIcon={<ArrowRightIcon />}
+          onClick={onNext}
+        >
           Nächster Schritt
         </Button>
       </Box>

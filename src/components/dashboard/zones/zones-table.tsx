@@ -6,7 +6,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { NotePencil as NotePencilIcon } from "@phosphor-icons/react/dist/ssr/NotePencil";
 
-import type { ZoneResult } from "@/app/dashboard/zones/ZonesPageClient.types";
+import type { ZoneResult } from "app/dashboard/zones/ZonesPageClient.types";
 import { DataTable } from "@/components/core/data-table";
 import type { ColumnDef } from "@/components/core/data-table";
 import { useZonesSelection } from "./zones-selection-context";

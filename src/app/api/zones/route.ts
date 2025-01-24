@@ -1,34 +1,52 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+export const runtime = "nodejs";  // <-- Wichtig!
 
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma"; // Passe den Pfad an dein Projekt an
+
+// GET /api/zones
+export async function GET() {
+  try {
+    // Hole alle Zonen + verknüpfte Kategorie
+    const zones = await prisma.zone.findMany({
+      include: {
+        category: true, // => category: { id, name, ... }
+      },
+    });
+    return NextResponse.json(zones, { status: 200 });
+  } catch (error) {
+    console.error("GET /api/zones error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+// NEU: POST /api/zones
 export async function POST(request: Request) {
   try {
-    // 1) JSON aus dem Request lesen
     const body = await request.json();
-    const { zoneKey, zoneName, minutesRequired, pointsGranted } = body;
+    // body z. B. { zoneKey, zoneName, minutesRequired, pointsGranted, categoryId }
 
-    // 2) Validierung (minimal)
+    const { zoneKey, zoneName, minutesRequired, pointsGranted, categoryId } = body;
+
+    // 1) Minimale Validierung
     if (!zoneKey || !zoneName) {
-      return NextResponse.json(
-        { error: "zoneKey and zoneName are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // 3) DB-Insert
+    // 2) Prisma create
     const newZone = await prisma.zone.create({
       data: {
         zoneKey,
         zoneName,
         minutesRequired: minutesRequired ?? 60,
         pointsGranted: pointsGranted ?? 1,
+        categoryId: categoryId || null,  // <- Falls "" => null
       },
     });
 
-    // 4) Erfolg: JSON zurück
     return NextResponse.json(newZone, { status: 201 });
-  } catch (error) {
-    console.error("POST /api/zones error:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+  } catch (err: any) {
+    const msg = typeof err?.message === "string" ? err.message : String(err);
+    console.error("POST /api/zones error:", msg);
+
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
